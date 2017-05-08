@@ -44,6 +44,12 @@ module FirebaseIdToken
     # before, ideally in a background job if you are using Rails.
     # @return [nil, Hash]
     def self.verify(jwt_token)
+      payload = new(jwt_token).verify
+
+      payload if payload['verified']
+    end
+
+    def self.verify_anyway(jwt_token)
       new(jwt_token).verify
     end
 
@@ -59,13 +65,30 @@ module FirebaseIdToken
     # @see Signature.verify
     def verify
       certificate = FirebaseIdToken::Certificates.find(@kid)
-      if certificate
-        payload = decode_jwt_payload(@jwt_token, certificate.public_key)
-        authorize payload
+      jwt_options = certificate.nil? ? {} : JWT_DEFAULTS
+      cert_key = certificate.public_key if certificate
+
+      if certificate || none?
+        payload = decode_jwt_payload(@jwt_token, cert_key, jwt_options)
+        payload = authorize(payload)
       end
+
+      # not nil in _anyway methos
+      result ||= {}
+      result['verified'] = true
+
+      # empty non-verified payload if verification failed
+      # mark as non-verified if unsigned
+      result['verified'] = false if none? || !payload
+
+      result
     end
 
     private
+
+    def none?
+      @kid == 'none'
+    end
 
     def extract_kid(jwt_token)
       JWT.decode(jwt_token, nil, false).last['kid']
@@ -73,8 +96,8 @@ module FirebaseIdToken
       'none'
     end
 
-    def decode_jwt_payload(token, cert_key)
-      JWT.decode(token, cert_key, true, JWT_DEFAULTS).first
+    def decode_jwt_payload(token, cert_key, jwt_options)
+      JWT.decode(token, cert_key, !cert_key.nil?, jwt_options).first
     rescue StandardError
       nil
     end
