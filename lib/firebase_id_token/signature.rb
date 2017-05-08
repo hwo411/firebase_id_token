@@ -74,7 +74,7 @@ module FirebaseIdToken
       end
 
       # not nil in _anyway methos
-      result ||= {}
+      result = payload || {}
       result['verified'] = true
 
       # empty non-verified payload if verification failed
