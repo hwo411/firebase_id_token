@@ -87,7 +87,7 @@ module FirebaseIdToken
     private
 
     def none?
-      @kid == 'none'
+      !@kid || @kid == 'none'
     end
 
     def extract_kid(jwt_token)
