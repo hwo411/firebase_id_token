@@ -64,6 +64,12 @@ module FirebaseIdToken
 
     # @see Signature.verify
     def verify
+      payload = verify_anyway
+
+      payload if payload['verified']
+    end
+
+    def verify_anyway
       certificate = FirebaseIdToken::Certificates.find(@kid)
       jwt_options = certificate.nil? ? {} : JWT_DEFAULTS
       cert_key = certificate.public_key if certificate
