@@ -80,6 +80,7 @@ module FirebaseIdToken
       # empty non-verified payload if verification failed
       # mark as non-verified if unsigned
       result['verified'] = false if none? || !payload
+      result['jwt_error'] = @jwt_error if @jwt_error
 
       result
     end
@@ -92,14 +93,15 @@ module FirebaseIdToken
 
     def extract_kid(jwt_token)
       JWT.decode(jwt_token, nil, false).last['kid']
-    rescue StandardError
+    rescue StandardError => e
+      @jwt_error = e.to_s
       'none'
     end
 
     def decode_jwt_payload(token, cert_key, jwt_options)
       JWT.decode(token, cert_key, !cert_key.nil?, jwt_options).first
-    rescue StandardError
-      nil
+    rescue StandardError => e
+      @jwt_error = e.to_s
     end
 
     def authorize(payload)
