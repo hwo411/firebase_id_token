@@ -111,15 +111,24 @@ module FirebaseIdToken
     end
 
     def authorized?(payload)
-      still_valid?(payload) &&
-      @project_ids.include?(payload['aud']) &&
-      issuer_authorized?(payload) &&
-      ! payload['sub'].empty?
+      check = still_valid?(payload)
+      @jwt_error = 'Token expired (exp and iat check)' && return unless check
+
+      check = @project_ids.include?(payload['aud'])
+      @jwt_error = 'Project identity failed (aud check)' && return unless check
+
+      check = issuer_authorized?(payload)
+      @jwt_error = 'Project identity failed (iss check)' && return unless check
+
+      check = !payload['sub'].empty?
+      @jwt_error = 'Payload sub empty (sub check)' && return unless check
+
+      true
     end
 
     def still_valid?(payload)
       payload['exp'].to_i > Time.now.to_i &&
-      payload['iat'].to_i < Time.now.to_i
+        payload['iat'].to_i < Time.now.to_i
     end
 
     def issuer_authorized?(payload)
