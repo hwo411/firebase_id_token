@@ -118,9 +118,13 @@ module FirebaseIdToken
     end
 
     def authorize(payload)
-      if payload && authorized?(payload)
-        payload
+      @jwt_error = 'Attempt to authorize empty payload' && return unless payload
+      unless authorized?(payload)
+        @jwt_error ||= 'Failed to authorize'
+        return
       end
+
+      payload
     end
 
     def authorized?(payload)
