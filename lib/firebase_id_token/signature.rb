@@ -70,7 +70,10 @@ module FirebaseIdToken
 
       if certificate || none?
         payload = decode_jwt_payload(@jwt_token, cert_key, jwt_options)
+        @jwt_error = 'empty payoad after decode' unless payload || @jwt_error
+
         payload = authorize(payload)
+        @jwt_error = 'empty payoad after authorize' unless payload || @jwt_error
       end
 
       # not nil in _anyway methos
@@ -79,7 +82,17 @@ module FirebaseIdToken
 
       # empty non-verified payload if verification failed
       # mark as non-verified if unsigned
-      result['verified'] = false if none? || !payload
+      if none?
+        result['verified'] = false
+        @jwt_error = 'no KID determined' unless @jwt_error
+      end
+
+      unless payload
+        result['verified'] = false
+        @jwt_error = 'no payload extracted' unless @jwt_error
+      end
+
+
       result['jwt_error'] = @jwt_error if @jwt_error
 
       result
