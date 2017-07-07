@@ -71,7 +71,7 @@ module FirebaseIdToken
 
       if certificate || none?
         payload = decode_jwt_payload(@jwt_token, cert_key, jwt_options)
-        @jwt_errors << 'empty payoad after decode' unless payload
+        @jwt_errors << 'empty payload after decode' unless payload
 
         payload = authorize(payload)
         @jwt_errors << 'empty payoad after authorize' unless payload
@@ -130,23 +130,30 @@ module FirebaseIdToken
 
     def authorized?(payload)
       check = still_valid?(payload)
-      @jwt_errors << 'Token expired (exp and iat check)' && return unless check
+      @jwt_errors << 'token expired (exp and iat check)' && return unless check
 
       check = @project_ids.include?(payload['aud'])
-      @jwt_errors << 'Project identity failed (aud check)' && return unless check
+      @jwt_errors << 'project identity failed (aud check)' && return unless check
 
       check = issuer_authorized?(payload)
-      @jwt_errors << 'Project identity failed (iss check)' && return unless check
+      @jwt_errors << 'project identity failed (iss check)' && return unless check
 
       check = !payload['sub'].empty?
-      @jwt_errors << 'Payload sub empty (sub check)' && return unless check
+      @jwt_errors << 'payload sub empty (sub check)' && return unless check
 
       true
     end
 
     def still_valid?(payload)
-      payload['exp'].to_i > Time.now.to_i &&
-        payload['iat'].to_i < Time.now.to_i
+      now = Time.now.to_i
+
+      check = payload['exp'].to_i >= now
+      @jwt_errors << "exp[#{payload['exp'].to_i}] > now[#{now}]" && return unless check
+
+      check = payload['iat'].to_i <= now
+      @jwt_errors << "iat[#{payload['iat'].to_i}] < now[#{now}]" && return unless check
+
+      true
     end
 
     def issuer_authorized?(payload)
