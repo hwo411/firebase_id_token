@@ -60,6 +60,7 @@ module FirebaseIdToken
       @project_ids = FirebaseIdToken.configuration.project_ids
       @kid = extract_kid(jwt_token)
       @jwt_token = jwt_token
+      @jwt_errors = []
     end
 
     # @see Signature.verify
@@ -70,10 +71,10 @@ module FirebaseIdToken
 
       if certificate || none?
         payload = decode_jwt_payload(@jwt_token, cert_key, jwt_options)
-        @jwt_error = 'empty payoad after decode' unless payload || @jwt_error
+        @jwt_errors << 'empty payoad after decode' unless payload
 
         payload = authorize(payload)
-        @jwt_error = 'empty payoad after authorize' unless payload || @jwt_error
+        @jwt_errors << 'empty payoad after authorize' unless payload
       end
 
       # not nil in _anyway methos
@@ -84,16 +85,16 @@ module FirebaseIdToken
       # mark as non-verified if unsigned
       if none?
         result['verified'] = false
-        @jwt_error = 'no KID determined' unless @jwt_error
+        @jwt_errors << 'no KID determined'
       end
 
       unless payload
         result['verified'] = false
-        @jwt_error = 'no payload extracted' unless @jwt_error
+        @jwt_errors << 'no payload extracted'
       end
 
 
-      result['jwt_error'] = @jwt_error if @jwt_error
+      result['jwt_errors'] = @jwt_errors
 
       result
     end
@@ -107,20 +108,20 @@ module FirebaseIdToken
     def extract_kid(jwt_token)
       JWT.decode(jwt_token, nil, false).last['kid']
     rescue StandardError => e
-      @jwt_error = e.to_s
+      @jwt_errors << e.to_s
       'none'
     end
 
     def decode_jwt_payload(token, cert_key, jwt_options)
       JWT.decode(token, cert_key, !cert_key.nil?, jwt_options).first
     rescue StandardError => e
-      @jwt_error = e.to_s
+      @jwt_errors << e.to_s
     end
 
     def authorize(payload)
-      @jwt_error = 'Attempt to authorize empty payload' && return unless payload
+      @jwt_errors << 'Attempt to authorize empty payload' && return unless payload
       unless authorized?(payload)
-        @jwt_error ||= 'Failed to authorize'
+        @jwt_errors << 'Failed to authorize'
         return
       end
 
@@ -129,16 +130,16 @@ module FirebaseIdToken
 
     def authorized?(payload)
       check = still_valid?(payload)
-      @jwt_error = 'Token expired (exp and iat check)' && return unless check
+      @jwt_errors << 'Token expired (exp and iat check)' && return unless check
 
       check = @project_ids.include?(payload['aud'])
-      @jwt_error = 'Project identity failed (aud check)' && return unless check
+      @jwt_errors << 'Project identity failed (aud check)' && return unless check
 
       check = issuer_authorized?(payload)
-      @jwt_error = 'Project identity failed (iss check)' && return unless check
+      @jwt_errors << 'Project identity failed (iss check)' && return unless check
 
       check = !payload['sub'].empty?
-      @jwt_error = 'Payload sub empty (sub check)' && return unless check
+      @jwt_errors << 'Payload sub empty (sub check)' && return unless check
 
       true
     end
