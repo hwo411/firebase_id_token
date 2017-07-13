@@ -57,10 +57,10 @@ module FirebaseIdToken
     # and `:kid`, `:jwt_token` from the related `jwt_token`.
     # @param [String] jwt_token Firebase ID Token
     def initialize(jwt_token)
+      @jwt_errors = []
       @project_ids = FirebaseIdToken.configuration.project_ids
       @kid = extract_kid(jwt_token)
       @jwt_token = jwt_token
-      @jwt_errors = []
     end
 
     # @see Signature.verify
