@@ -116,14 +116,12 @@ module FirebaseIdToken
       JWT.decode(token, cert_key, !cert_key.nil?, jwt_options).first
     rescue StandardError => e
       @jwt_errors << e.to_s
+      nil
     end
 
     def authorize(payload)
       @jwt_errors << 'Attempt to authorize empty payload' && return unless payload
-      unless authorized?(payload)
-        @jwt_errors << 'Failed to authorize'
-        return
-      end
+      @jwt_errors << 'Failed to authorize' && return unless authorized?(payload)
 
       payload
     end
