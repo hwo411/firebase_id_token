@@ -74,7 +74,7 @@ module FirebaseIdToken
         @jwt_errors << 'empty payload after decode' unless payload
 
         payload = authorize(payload)
-        @jwt_errors << 'empty payoad after authorize' unless payload
+        @jwt_errors << 'empty payload after authorize' unless payload
       end
 
       # not nil in _anyway methos
@@ -120,8 +120,8 @@ module FirebaseIdToken
     end
 
     def authorize(payload)
-      @jwt_errors << 'Attempt to authorize empty payload' && return unless payload
-      @jwt_errors << 'Failed to authorize' && return unless authorized?(payload)
+      @jwt_errors << 'attempt to authorize empty payload' && return unless payload
+      @jwt_errors << 'failed to authorize' && return unless authorized?(payload)
 
       payload
     end
